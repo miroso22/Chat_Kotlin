@@ -4,6 +4,7 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.PreparedStatement
 import java.util.*
+import java.sql.Date
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -13,6 +14,8 @@ object DBConnector {
     private val checkUser: PreparedStatement
     private val addUser: PreparedStatement
     private val userCount: PreparedStatement
+    private val saveMessage: PreparedStatement
+    private val loadMessages: PreparedStatement
     init {
         val props = Properties()
         props.load(Files.newInputStream(Paths.get("database.properties")))
@@ -25,6 +28,8 @@ object DBConnector {
         checkUser = loadStatement("checkUser")
         addUser = loadStatement("addUser")
         userCount = loadStatement("userCount")
+        saveMessage = loadStatement("saveMessage")
+        loadMessages = loadStatement("loadMessages")
     }
     val HasUser = { login: String ->
         with(hasUser) {
@@ -48,4 +53,13 @@ object DBConnector {
         }
     }
     val UserCount = { userCount.executeQuery() }
+    val SaveMessage = { user: String, content: String, date: Date ->
+        with(saveMessage) {
+            setString(1, user)
+            setString(2, content)
+            setDate(3, date)
+            executeUpdate()
+        }
+    }
+    val LoadMessages = { loadMessages.executeQuery() }
 }

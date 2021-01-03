@@ -5,6 +5,7 @@ import java.io.OutputStreamWriter
 import java.net.Socket
 import java.net.SocketException
 import java.sql.ResultSet
+import java.util.*
 
 class Client(client: Socket) : Thread() {
     private val reader = BufferedReader(InputStreamReader(client.getInputStream()))
@@ -16,12 +17,13 @@ class Client(client: Socket) : Thread() {
         var message: String
         try {
             val loginChecked = checkLogin()
-            if (loginChecked && checkPassword() || !loginChecked && register()) {
-                while (true) {
-                    message = reader.readLine() ?: return
-                    clients.forEach { it.send(message, login) }
-                    DBConnector.queries.submit { DBConnector.HasUser("") }
-                }
+            if (!(loginChecked && checkPassword() || !loginChecked && register())) return
+            println("User $login connected")
+            loadMessages()
+            while (true) {
+                message = reader.readLine() ?: return
+                clients.forEach { if (it != this) it.send(message, login) }
+                saveMessage(message)
             }
         }
         catch (e: SocketException) { println("User $login disconnected") }
@@ -63,9 +65,25 @@ class Client(client: Socket) : Thread() {
             val resultSet = future1.get()
             val id = if (resultSet.next()) resultSet.getInt(1) else return false
             val task2 = { DBConnector.AddUser(id, login, password) }
+            resultSet.close()
             DBConnector.queries.submit(task2)
             return true
         }
         return false
+    }
+
+    private fun saveMessage(message: String) {
+        val task = { DBConnector.SaveMessage(login, message, java.sql.Date(Date().time)) }
+        DBConnector.queries.submit(task)
+    }
+    private fun loadMessages() {
+        val task = { DBConnector.LoadMessages() }
+        val future = DBConnector.queries.submit(task)
+        val messages = future.get()
+        while (messages.next()) {
+            val user = messages.getString(1)
+            val message = messages.getString(2)
+            send(message, user)
+        }
     }
 }
