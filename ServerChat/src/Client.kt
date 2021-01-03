@@ -19,7 +19,7 @@ class Client(client: Socket) : Thread() {
             if (loginChecked && checkPassword() || !loginChecked && register()) {
                 while (true) {
                     message = reader.readLine() ?: return
-                    clients.forEach { it.send(message) }
+                    clients.forEach { it.send(message, login) }
                     DBConnector.queries.submit { DBConnector.HasUser("") }
                 }
             }
@@ -28,8 +28,8 @@ class Client(client: Socket) : Thread() {
         finally { reader.close(); writer.close() }
     }
 
-    private fun send(vararg messages: String) {
-        messages.forEach { writer.write("<Server>: $it\n") }
+    private fun send(message: String, login: String = "Server") {
+        writer.write("<$login>: $message\n")
         writer.flush()
     }
 

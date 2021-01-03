@@ -1,11 +1,11 @@
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.PreparedStatement
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-
 
 object DBConnector {
     val queries: ExecutorService = Executors.newSingleThreadExecutor()
@@ -14,20 +14,18 @@ object DBConnector {
     private val addUser: PreparedStatement
     private val userCount: PreparedStatement
     init {
-        val input = Files.newInputStream(Paths.get("database.properties"))
         val props = Properties()
-        props.load(input)
-        val url = props.getProperty("url")
-        val user = props.getProperty("user")
-        val password = props.getProperty("password")
-        val con = DriverManager.getConnection(url, user, password)
-
-        hasUser = con.prepareStatement("select count(*) from users where login = ?;")
-        checkUser = con.prepareStatement("select * from users where login = ? && password = ?;")
-        addUser = con.prepareStatement("insert into users (id, login, password) values (?, ?, ?);")
-        userCount = con.prepareStatement("select count(*) from users;")
+        props.load(Files.newInputStream(Paths.get("database.properties")))
+        val con: Connection = with(props) {
+            DriverManager.getConnection(getProperty("url"), getProperty("user"), getProperty("password"))
+        }
+        props.load(Files.newInputStream(Paths.get("queries.properties")))
+        val loadStatement = { name: String -> con.prepareStatement(props.getProperty(name)) }
+        hasUser = loadStatement("hasUser")
+        checkUser = loadStatement("checkUser")
+        addUser = loadStatement("addUser")
+        userCount = loadStatement("userCount")
     }
-
     val HasUser = { login: String ->
         with(hasUser) {
             setString(1, login)
