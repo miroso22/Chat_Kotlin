@@ -1,6 +1,6 @@
 import java.net.Socket
 
-const val port = 6666
+const val port = 6667
 val socket = Socket("localhost", port)
 
 fun main() {

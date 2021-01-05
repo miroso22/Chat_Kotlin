@@ -1,6 +1,6 @@
 import java.net.ServerSocket
 
-private const val port = 6666
+private const val port = 6667
 private val server = ServerSocket(port)
 val clients = ArrayList<Client>()
 
