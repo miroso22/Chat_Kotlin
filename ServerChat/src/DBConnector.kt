@@ -26,16 +26,17 @@ object DBConnector {
         Thread { while (true) { Thread.sleep(2000); clearOldMessages() } }.start()
     }
 
-    val hasUser: (String) -> Future<ResultSet> = { login ->
-        getFuture {
+    fun hasUser(login: String): Future<ResultSet> {
+        return getFuture {
             with(statements["hasUser"]!!) {
                 setString(1, login)
                 executeQuery()
             }
         }
     }
-    val checkUser: (String, String) -> Future<ResultSet> = { login, password ->
-        getFuture {
+
+    fun checkUser(login: String, password: String): Future<ResultSet> {
+        return getFuture {
             with(statements["checkUser"]!!) {
                 setString(1, login)
                 setString(2, password)
@@ -43,14 +44,13 @@ object DBConnector {
             }
         }
     }
-    val userCount: () -> Future<ResultSet> = {
+    fun userCount(): Future<ResultSet> =
         getFuture { statements["userCount"]!!.executeQuery() }
-    }
-    val loadMessages: () -> Future<ResultSet> = {
-        getFuture { statements["loadMessages"]!!.executeQuery() }
-    }
 
-    val addUser: (Int, String, String) -> Unit = { id, login, password ->
+    fun loadMessages(): Future<ResultSet> =
+        getFuture { statements["loadMessages"]!!.executeQuery() }
+
+    fun addUser(id: Int, login: String, password: String) {
         queries.submit {
             with(statements["addUser"]!!) {
                 setInt(1, id)
@@ -60,7 +60,7 @@ object DBConnector {
             }
         }
     }
-    val saveMessage: (String, String, Date) -> Unit = { user, content, date ->
+    fun saveMessage(user: String, content: String, date: Date) {
         queries.submit {
             with(statements["saveMessage"]!!) {
                 setString(1, user)
@@ -71,10 +71,10 @@ object DBConnector {
         }
     }
 
-    val getMessageCount: () -> Future<ResultSet> = {
+    private fun getMessageCount(): Future<ResultSet> =
         getFuture { statements["messageCount"]!!.executeQuery() }
-    }
-    val clearOldMessages: () -> Unit = {
+
+    private fun clearOldMessages() {
         val resultSet = getMessageCount().get()
         if (resultSet.next() && resultSet.getInt(1) > 20) {
             queries.submit {

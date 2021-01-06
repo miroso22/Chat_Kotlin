@@ -17,7 +17,15 @@ class Client(client: Socket) : Thread() {
         var message: String
         try {
             val loginChecked = checkLogin()
-            if (!(loginChecked && checkPassword() || !loginChecked && register())) return
+            if (loginChecked) {
+                while (!checkPassword()) {
+                    send("Wrong password. Try again")
+                }
+            } else if (!register()) {
+                send("Disconnecting...")
+                return
+            }
+
             println("User $login connected")
             loadMessages()
             while (true) {
