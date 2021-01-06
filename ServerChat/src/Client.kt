@@ -5,7 +5,7 @@ import java.io.OutputStreamWriter
 import java.net.Socket
 import java.net.SocketException
 import java.sql.ResultSet
-import java.util.*
+import java.util.Date
 
 class Client(client: Socket) : Thread() {
     private val reader = BufferedReader(InputStreamReader(client.getInputStream()))
@@ -25,9 +25,9 @@ class Client(client: Socket) : Thread() {
                 clients.forEach { if (it != this) it.send(message, login) }
                 DBConnector.saveMessage(login, message, java.sql.Date(Date().time))
             }
-        }
-        catch (e: SocketException) { println("User $login disconnected") }
-        finally { reader.close(); writer.close() }
+        } catch (e: SocketException) {
+            println("User $login disconnected")
+        } finally { reader.close(); writer.close() }
     }
 
     private fun send(message: String, login: String = "Server") {
