@@ -1,11 +1,13 @@
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.sql.*
-import java.util.Properties
+import java.sql.Date
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import kotlin.collections.HashMap
+import kotlin.concurrent.fixedRateTimer
 
 object DBConnector {
     private val queries: ExecutorService = Executors.newSingleThreadExecutor()
@@ -18,12 +20,12 @@ object DBConnector {
             DriverManager.getConnection(getProperty("url"), getProperty("user"), getProperty("password"))
         }
 
-        val loadStatement = { name: String -> con.prepareStatement(props.getProperty(name)) }
+        fun loadStatement(name: String) = con.prepareStatement(props.getProperty(name))
         props.load(Files.newInputStream(Paths.get("ServerChat/queries.properties")))
         for (name in props.keys)
             statements[name as String] = loadStatement(name)
 
-        Thread { while (true) { Thread.sleep(2000); clearOldMessages() } }.start()
+        fixedRateTimer(initialDelay = 10000, period = 10000, action = { clearOldMessages() })
     }
 
     fun hasUser(login: String): Future<ResultSet> {
@@ -51,7 +53,7 @@ object DBConnector {
         getFuture { statements["loadMessages"]!!.executeQuery() }
 
     fun addUser(id: Int, login: String, password: String) {
-        queries.submit {
+        queries.execute {
             with(statements["addUser"]!!) {
                 setInt(1, id)
                 setString(2, login)
@@ -61,7 +63,7 @@ object DBConnector {
         }
     }
     fun saveMessage(user: String, content: String, date: Date) {
-        queries.submit {
+        queries.execute {
             with(statements["saveMessage"]!!) {
                 setString(1, user)
                 setString(2, content)
@@ -75,12 +77,13 @@ object DBConnector {
         getFuture { statements["messageCount"]!!.executeQuery() }
 
     private fun clearOldMessages() {
+        println(1)
         val resultSet = getMessageCount().get()
-        if (resultSet.next() && resultSet.getInt(1) > 20) {
+        if (resultSet.next() && resultSet.getInt(1) > 80) {
             queries.submit {
                 statements["clearOldestMessages"]!!.executeUpdate()
             }
-            println("deleted!")
+            println("Deleted!")
         }
     }
 

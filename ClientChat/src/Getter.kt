@@ -1,5 +1,7 @@
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import java.net.SocketException
+import kotlin.system.exitProcess
 
 object Getter : Thread() {
     private val reader = BufferedReader(InputStreamReader(socket.getInputStream()))
@@ -7,7 +9,12 @@ object Getter : Thread() {
     override fun run() {
         var message: String
         while (true) {
-            message = reader.readLine() ?: return
+            try {
+                message = reader.readLine() ?: return
+            } catch (e: SocketException) {
+                println("Server stopped!")
+                exitProcess(1)
+            }
             println(message)
         }
     }

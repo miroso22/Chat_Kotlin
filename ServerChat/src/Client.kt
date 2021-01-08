@@ -38,7 +38,7 @@ class Client(client: Socket) : Thread() {
         } finally { reader.close(); writer.close() }
     }
 
-    private fun send(message: String, login: String = "Server") {
+    fun send(message: String, login: String = "Server") {
         writer.write("<$login>: $message\n")
         writer.flush()
     }
@@ -54,8 +54,7 @@ class Client(client: Socket) : Thread() {
     private fun checkPassword(): Boolean {
         send("Enter password: ")
         val password = reader.readLine() ?: return false
-        val future = DBConnector.checkUser(login, password)
-        val correct = future.get()
+        val correct = DBConnector.checkUser(login, password).get()
         val res = correct.next()
         correct.close()
         return res
